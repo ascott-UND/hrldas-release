@@ -116,8 +116,6 @@ module module_NoahMP_hrldas_driver
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  QFX       ! latent heat flux [kg s-1 m-2]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  LH        ! latent heat flux [W m-2]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  GRDFLX    ! ground/snow heat flux [W m-2]
-  REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  SMSTAV    ! soil moisture avail. [not used]
-  REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  SMSTOT    ! total soil water [mm][not used]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  SFCRUNOFF ! accumulated surface runoff [m]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  UDRUNOFF  ! accumulated sub-surface runoff [m]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  ALBEDO    ! total grid albedo []
@@ -149,7 +147,6 @@ module module_NoahMP_hrldas_driver
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  SNEQVOXY  ! snow mass at last time step(mm h2o)
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  ALBOLDXY  ! snow albedo at last time step (-)
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  QSNOWXY   ! snowfall on the ground [mm/s]
-  REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  WSLAKEXY  ! lake water storage [mm]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  ZWTXY     ! water table depth [m]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  WAXY      ! water in the "aquifer" [mm]
   REAL,    ALLOCATABLE, DIMENSION(:,:)    ::  WTXY      ! groundwater storage [mm]
@@ -873,8 +870,6 @@ module module_NoahMP_hrldas_driver
   ALLOCATE ( QFX       (XSTART:XEND,YSTART:YEND) )  ! latent heat flux [kg s-1 m-2]
   ALLOCATE ( LH        (XSTART:XEND,YSTART:YEND) )  ! latent heat flux [W m-2]
   ALLOCATE ( GRDFLX    (XSTART:XEND,YSTART:YEND) )  ! ground/snow heat flux [W m-2]
-  ALLOCATE ( SMSTAV    (XSTART:XEND,YSTART:YEND) )  ! soil moisture avail. [not used]
-  ALLOCATE ( SMSTOT    (XSTART:XEND,YSTART:YEND) )  ! total soil water [mm][not used]
   ALLOCATE ( SFCRUNOFF (XSTART:XEND,YSTART:YEND) )  ! accumulated surface runoff [m]
   ALLOCATE ( UDRUNOFF  (XSTART:XEND,YSTART:YEND) )  ! accumulated sub-surface runoff [m]
   ALLOCATE ( ALBEDO    (XSTART:XEND,YSTART:YEND) )  ! total grid albedo []
@@ -906,7 +901,6 @@ module module_NoahMP_hrldas_driver
   ALLOCATE ( SNEQVOXY  (XSTART:XEND,YSTART:YEND) )  ! snow mass at last time step(mm h2o)
   ALLOCATE ( ALBOLDXY  (XSTART:XEND,YSTART:YEND) )  ! snow albedo at last time step (-)
   ALLOCATE ( QSNOWXY   (XSTART:XEND,YSTART:YEND) )  ! snowfall on the ground [mm/s]
-  ALLOCATE ( WSLAKEXY  (XSTART:XEND,YSTART:YEND) )  ! lake water storage [mm]
   ALLOCATE ( ZWTXY     (XSTART:XEND,YSTART:YEND) )  ! water table depth [m]
   ALLOCATE ( WAXY      (XSTART:XEND,YSTART:YEND) )  ! water in the "aquifer" [mm]
   ALLOCATE ( WTXY      (XSTART:XEND,YSTART:YEND) )  ! groundwater storage [mm]
@@ -1193,8 +1187,6 @@ ENDIF
   HAILNCV    = undefined_real
   TSK        = undefined_real
   QFX        = undefined_real
-  SMSTAV     = undefined_real
-  SMSTOT     = undefined_real
   SMOIS      = undefined_real
   SH2O       = undefined_real
   TSLB       = undefined_real
@@ -1221,7 +1213,6 @@ ENDIF
   SNEQVOXY   = undefined_real
   ALBOLDXY   = undefined_real
   QSNOWXY    = undefined_real
-  WSLAKEXY   = undefined_real
   ZWTXY      = undefined_real
   WAXY       = undefined_real
   WTXY       = undefined_real
@@ -1414,7 +1405,6 @@ ENDIF
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "ZWT"     , ZWTXY    )
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "WA"      , WAXY     )
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "WT"      , WTXY     )
-     call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "WSLAKE"  , WSLAKEXY )
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "LFMASS"  , LFMASSXY )
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "RTMASS"  , RTMASSXY )
      call get_from_restart(xstart, xend, xstart, ixfull, jxfull, "STMASS"  , STMASSXY )
@@ -1537,7 +1527,7 @@ ENDIF
                     TSLB,    SMOIS,     SH2O,      DZS, FNDSOILW, FNDSNOWH, &
                      TSK,  ISNOWXY,     TVXY,     TGXY, CANICEXY,      TMN,     XICE, &
                 CANLIQXY,    EAHXY,    TAHXY,     CMXY,     CHXY,                     &
-                  FWETXY, SNEQVOXY, ALBOLDXY,  QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY, &
+                  FWETXY, SNEQVOXY, ALBOLDXY,  QSNOWXY,    ZWTXY,     WAXY, &
                     WTXY,   TSNOXY,  ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY, RTMASSXY, &
                 STMASSXY,   WOODXY, STBLCPXY, FASTCPXY,   XSAIXY, LAI,                    &
                  GRAINXY,    GDDXY,                                                   &
@@ -1668,7 +1658,7 @@ ENDIF
                     TSLB,    SMOIS,     SH2O,      DZS, FNDSOILW, FNDSNOWH, &
                      TSK,  ISNOWXY,     TVXY,     TGXY, CANICEXY,      TMN,     XICE, &
                 CANLIQXY,    EAHXY,    TAHXY,     CMXY,     CHXY,                     &
-                  FWETXY, SNEQVOXY, ALBOLDXY,  QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY, &
+                  FWETXY, SNEQVOXY, ALBOLDXY,  QSNOWXY,    ZWTXY,     WAXY, &
                     WTXY,   TSNOXY,  ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY, RTMASSXY, &
                 STMASSXY,   WOODXY, STBLCPXY, FASTCPXY,   XSAIXY, LAI,                    &
                  GRAINXY,    GDDXY,                                                   &
@@ -1957,14 +1947,14 @@ end subroutine land_driver_ini
 	       IOPT_GLA, IOPT_RSF, IZ0TLND, sf_urban_physics,                 &
 		  T_PHY,  QV_CURR,    U_PHY,    V_PHY,    SWDOWN,        GLW, &
 		    P8W,   RAINBL,       SR,                                  &
-		    TSK,      HFX,      QFX,       LH,    GRDFLX,     SMSTAV, &
-		 SMSTOT,SFCRUNOFF, UDRUNOFF,   ALBEDO,     SNOWC,      SMOIS, &
+		    TSK,      HFX,      QFX,       LH,    GRDFLX,      &
+		 SFCRUNOFF, UDRUNOFF,   ALBEDO,     SNOWC,      SMOIS, &
 		   SH2O,     TSLB,     SNOW,    SNOWH,    CANWAT,     ACSNOM, &
 		 ACSNOW,    EMISS,     QSFC,                                  &
  		     Z0,      ZNT,                                            & ! IN/OUT LSM eqv
 		ISNOWXY,     TVXY,     TGXY, CANICEXY,  CANLIQXY,      EAHXY, &
 		  TAHXY,     CMXY,     CHXY,   FWETXY,  SNEQVOXY,   ALBOLDXY, &
-		QSNOWXY, WSLAKEXY,    ZWTXY,     WAXY,      WTXY,     TSNOXY, &
+		QSNOWXY,     ZWTXY,     WAXY,      WTXY,     TSNOXY, &
 		ZSNSOXY,  SNICEXY,  SNLIQXY, LFMASSXY,  RTMASSXY,   STMASSXY, &
 		 WOODXY, STBLCPXY, FASTCPXY,      LAI,    XSAIXY,    TAUSSXY, &
 	        SMOISEQ, SMCWTDXY,DEEPRECHXY,  RECHXY,   GRAINXY,      GDDXY,PGSXY, & ! IN/OUT Noah MP only
@@ -2330,7 +2320,6 @@ subroutine lsm_restart()
   call add_to_restart(ZWTXY     , "ZWT"   )
   call add_to_restart(WAXY      , "WA"    )
   call add_to_restart(WTXY      , "WT"    )
-  call add_to_restart(WSLAKEXY  , "WSLAKE")
   call add_to_restart(LFMASSXY  , "LFMASS")
   call add_to_restart(RTMASSXY  , "RTMASS")
   call add_to_restart(STMASSXY  , "STMASS")

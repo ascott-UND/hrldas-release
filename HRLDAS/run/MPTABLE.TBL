@@ -307,7 +307,7 @@
  OMEGAS     =   0.8 ,   0.4                                                    ! two-stream parameter omega for snow
  BETADS     =   0.5                                                            ! two-stream parameter betad for snow
  BETAIS     =   0.5                                                            ! two-stream parameter betaI for snow
- EG         =   0.97,   0.98                                                   ! emissivity soil surface 1-soil;2-lake
+ EG         =   0.97                                                           ! emissivity soil surface 1-soil;2-lake
 
 /
 

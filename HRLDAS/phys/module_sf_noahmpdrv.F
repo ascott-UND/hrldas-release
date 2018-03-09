@@ -19,14 +19,14 @@ CONTAINS
               IOPT_GLA, IOPT_RSF,   IZ0TLND, SF_URBAN_PHYSICS,              & ! IN : User options
                    T3D,     QV3D,     U_PHY,    V_PHY,   SWDOWN,      GLW,  & ! IN : Forcing
 		 P8W3D,PRECIP_IN,        SR,                                & ! IN : Forcing
-                   TSK,      HFX,      QFX,        LH,   GRDFLX,    SMSTAV, & ! IN/OUT LSM eqv
-                SMSTOT,SFCRUNOFF, UDRUNOFF,    ALBEDO,    SNOWC,     SMOIS, & ! IN/OUT LSM eqv
+                   TSK,      HFX,      QFX,        LH,   GRDFLX,     & ! IN/OUT LSM eqv
+                SFCRUNOFF, UDRUNOFF,    ALBEDO,    SNOWC,     SMOIS, & ! IN/OUT LSM eqv
 		  SH2O,     TSLB,     SNOW,     SNOWH,   CANWAT,    ACSNOM, & ! IN/OUT LSM eqv
 		ACSNOW,    EMISS,     QSFC,                                 & ! IN/OUT LSM eqv
  		    Z0,      ZNT,                                           & ! IN/OUT LSM eqv
                ISNOWXY,     TVXY,     TGXY,  CANICEXY, CANLIQXY,     EAHXY, & ! IN/OUT Noah MP only
 	         TAHXY,     CMXY,     CHXY,    FWETXY, SNEQVOXY,  ALBOLDXY, & ! IN/OUT Noah MP only
-               QSNOWXY, WSLAKEXY,    ZWTXY,      WAXY,     WTXY,    TSNOXY, & ! IN/OUT Noah MP only
+               QSNOWXY,    ZWTXY,      WAXY,     WTXY,    TSNOXY, & ! IN/OUT Noah MP only
 	       ZSNSOXY,  SNICEXY,  SNLIQXY,  LFMASSXY, RTMASSXY,  STMASSXY, & ! IN/OUT Noah MP only
 	        WOODXY, STBLCPXY, FASTCPXY,    XLAIXY,   XSAIXY,   TAUSSXY, & ! IN/OUT Noah MP only
 	       SMOISEQ, SMCWTDXY,DEEPRECHXY,   RECHXY,  GRAINXY,    GDDXY,PGSXY,  & ! IN/OUT Noah MP only
@@ -147,8 +147,6 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  QFX       ! latent heat flux [kg s-1 m-2]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  LH        ! latent heat flux [W m-2]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  GRDFLX    ! ground/snow heat flux [W m-2]
-    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  SMSTAV    ! soil moisture avail. [not used]
-    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  SMSTOT    ! total soil water [mm][not used]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  SFCRUNOFF ! accumulated surface runoff [m]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  UDRUNOFF  ! accumulated sub-surface runoff [m]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  ALBEDO    ! total grid albedo []
@@ -181,7 +179,6 @@ CONTAINS
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  SNEQVOXY  ! snow mass at last time step(mm h2o)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  ALBOLDXY  ! snow albedo at last time step (-)
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  QSNOWXY   ! snowfall on the ground [mm/s]
-    REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  WSLAKEXY  ! lake water storage [mm]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  ZWTXY     ! water table depth [m]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  WAXY      ! water in the "aquifer" [mm]
     REAL,    DIMENSION( ims:ime,          jms:jme ), INTENT(INOUT) ::  WTXY      ! groundwater storage [mm]
@@ -314,7 +311,6 @@ CONTAINS
     REAL                                :: SNEQVO       ! snow mass at last time step(mm h2o)
     REAL                                :: ALBOLD       ! snow albedo at last time step (-)
     REAL                                :: QSNOW        ! snowfall on the ground [mm/s]
-    REAL                                :: WSLAKE       ! lake water storage [mm]
     REAL                                :: ZWT          ! water table depth [m]
     REAL                                :: WA           ! water in the "aquifer" [mm]
     REAL                                :: WT           ! groundwater storage [mm]
@@ -421,7 +417,6 @@ CONTAINS
     LOGICAL                             :: IPRINT
 
     INTEGER                             :: SOILCOLOR          ! soil color index
-    INTEGER                             :: IST          ! surface type 1-soil; 2-lake
     INTEGER                             :: YEARLEN
     REAL                                :: SOLAR_TIME
     INTEGER                             :: JMONTH, JDAY
@@ -462,16 +457,12 @@ CONTAINS
           DO I=its,ite
              IF((XLAND(I,J)-1.5) >= 0.) THEN    ! Open water case
                 IF(XICE(I,J) == 1. .AND. IPRINT) PRINT *,' sea-ice at water point, I=',I,'J=',J
-                SMSTAV(I,J) = 1.0
-                SMSTOT(I,J) = 1.0
                 DO K = 1, NSOIL
                    SMOIS(I,K,J) = 1.0
                     TSLB(I,K,J) = 273.16
                 ENDDO
              ELSE
                 IF(XICE(I,J) == 1.) THEN        ! Sea-ice case
-                   SMSTAV(I,J) = 1.0
-                   SMSTOT(I,J) = 1.0
                    DO K = 1, NSOIL
                       SMOIS(I,K,J) = 1.0
                    ENDDO
@@ -576,7 +567,6 @@ CONTAINS
        SNEQVO                = SNEQVOXY(I,J)                ! SWE previous timestep
        ALBOLD                = ALBOLDXY(I,J)                ! albedo previous timestep, for snow aging
        QSNOW                 = QSNOWXY (I,J)                ! snow falling on ground
-       WSLAKE                = WSLAKEXY(I,J)                ! lake water storage (can be neg.) (mm)
        ZWT                   = ZWTXY   (I,J)                ! depth to water table [m]
        WA                    = WAXY    (I,J)                ! water storage in aquifer [mm]
        WT                    = WTXY    (I,J)                ! water in aquifer&saturated soil [mm]
@@ -598,7 +588,6 @@ CONTAINS
        DEEPRECH              = 0.
 
        SLOPETYP     = 1                               ! set underground runoff slope term
-       IST          = 1                               ! MP surface type: 1 = land; 2 = lake
        SOILCOLOR    = 4                               ! soil color: assuming a middle color category ?????????
 
        IF(SOILTYP == 14 .AND. XICE(I,J) == 0.) THEN
@@ -713,7 +702,6 @@ CONTAINS
          EAH    = undefined_value 
          TAH    = undefined_value
          FWET   = undefined_value 
-         WSLAKE = undefined_value 
          ZWT    = undefined_value 
          WA     = undefined_value 
          WT     = undefined_value 
@@ -772,7 +760,7 @@ CONTAINS
          CALL NOAHMP_SFLX (parameters, &
             I       , J       , LAT     , YEARLEN , JULIAN  , COSZ    , & ! IN : Time/Space-related
             DT      , DX      , DZ8W1D  , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
-            FVEG    , FVGMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
+            FVEG    , FVGMAX  , VEGTYP  , ICE     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
             SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
             T_ML    , P_ML    , PSFC    , U_ML    , V_ML    , Q_ML    , & ! IN : Forcing
             QC      , SWDN    , LWDN    ,                               & ! IN : Forcing
@@ -782,7 +770,7 @@ CONTAINS
             STC     , SMH2O   , SMC     , TAH     , EAH     , FWET    , & ! IN/OUT : 
             CANLIQ  , CANICE  , TV      , TG      , QSFC1D  , QSNOW   , & ! IN/OUT : 
             ISNOW   , ZSNSO   , SNDPTH  , SWE     , SNICE   , SNLIQ   , & ! IN/OUT : 
-            ZWT     , WA      , WT      , WSLAKE  , LFMASS  , RTMASS  , & ! IN/OUT : 
+            ZWT     , WA      , WT      , LFMASS  , RTMASS  , & ! IN/OUT : 
             STMASS  , WOOD    , STBLCP  , FASTCP  , PLAI    , PSAI    , & ! IN/OUT : 
             CM      , CH      , TAUSS   ,                               & ! IN/OUT : 
             GRAIN   , GDD     , PGS     ,                               & ! IN/OUT 
@@ -822,8 +810,6 @@ CONTAINS
              TSK      (I,J)                = TRAD
              HFX      (I,J)                = FSH
              GRDFLX   (I,J)                = SSOIL
-	     SMSTAV   (I,J)                = 0.0  ! [maintained as Noah consistency]
-             SMSTOT   (I,J)                = 0.0  ! [maintained as Noah consistency]
              SFCRUNOFF(I,J)                = SFCRUNOFF(I,J) + RUNSF * DT
              UDRUNOFF (I,J)                = UDRUNOFF(I,J)  + RUNSB * DT
              IF ( SALB > -999 ) THEN
@@ -854,7 +840,6 @@ CONTAINS
              SNEQVOXY (I,J)                = SNEQVO
              ALBOLDXY (I,J)                = ALBOLD
              QSNOWXY  (I,J)                = QSNOW
-             WSLAKEXY (I,J)                = WSLAKE
              ZWTXY    (I,J)                = ZWT
              WAXY     (I,J)                = WA
              WTXY     (I,J)                = WT
@@ -1147,7 +1132,7 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
        TSLB , SMOIS , SH2O , DZS , FNDSOILW , FNDSNOWH ,             &
        TSK, isnowxy , tvxy     ,tgxy     ,canicexy ,         TMN,     XICE,   &
        canliqxy ,eahxy    ,tahxy    ,cmxy     ,chxy     ,                     &
-       fwetxy   ,sneqvoxy ,alboldxy ,qsnowxy  ,wslakexy ,zwtxy    ,waxy     , &
+       fwetxy   ,sneqvoxy ,alboldxy ,qsnowxy  ,zwtxy    ,waxy     , &
        wtxy     ,tsnoxy   ,zsnsoxy  ,snicexy  ,snliqxy  ,lfmassxy ,rtmassxy , &
        stmassxy ,woodxy   ,stblcpxy ,fastcpxy ,xsaixy   ,lai      ,           &
        grainxy  ,gddxy    ,                                                   &
@@ -1223,7 +1208,6 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: sneqvoxy    !snow mass at last time step(mm h2o)
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: alboldxy    !snow albedo at last time step (-)
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: qsnowxy     !snowfall on the ground [mm/s]
-    REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: wslakexy    !lake water storage [mm]
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: zwtxy       !water table depth [m]
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: waxy        !water in the "aquifer" [mm]
     REAL, DIMENSION(ims:ime,jms:jme), INTENT(INOUT) :: wtxy        !groundwater storage [mm]
@@ -1427,7 +1411,6 @@ SUBROUTINE TRANSFER_MP_PARAMETERS(VEGTYPE,SOILTYPE,SLOPETYPE,SOILCOLOR,CROPTYPE,
              sneqvoxy   (I,J) = 0.0
              alboldxy   (I,J) = 0.65
              qsnowxy    (I,J) = 0.0
-             wslakexy   (I,J) = 0.0
 
              if(iopt_run.ne.5) then 
                    waxy       (I,J) = 4900.                                       !???

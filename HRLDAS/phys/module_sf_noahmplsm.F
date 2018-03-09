@@ -243,7 +243,7 @@ MODULE MODULE_SF_NOAHMPLSM
      REAL :: OMEGAS(MBAND)       !two-stream parameter omega for snow
      REAL :: BETADS              !two-stream parameter betad for snow
      REAL :: BETAIS              !two-stream parameter betad for snow
-     REAL :: EG(2)               !emissivity
+     REAL :: EG                  !emissivity
 
 !------------------------------------------------------------------------------------------!
 ! From the globals section of MPTABLE.TBL
@@ -337,7 +337,7 @@ contains
   SUBROUTINE NOAHMP_SFLX (parameters, &
                    ILOC    , JLOC    , LAT     , YEARLEN , JULIAN  , COSZ    , & ! IN : Time/Space-related
                    DT      , DX      , DZ8W    , NSOIL   , ZSOIL   , NSNOW   , & ! IN : Model configuration 
-                   SHDFAC  , SHDMAX  , VEGTYP  , ICE     , IST     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
+                   SHDFAC  , SHDMAX  , VEGTYP  , ICE     , CROPTYPE, & ! IN : Vegetation/Soil characteristics
                    SMCEQ   ,                                                   & ! IN : Vegetation/Soil characteristics
                    SFCTMP  , SFCPRS  , PSFC    , UU      , VV      , Q2      , & ! IN : Forcing
                    QC      , SOLDN   , LWDN    ,                               & ! IN : Forcing
@@ -347,7 +347,7 @@ contains
                    STC     , SH2O    , SMC     , TAH     , EAH     , FWET    , & ! IN/OUT : 
                    CANLIQ  , CANICE  , TV      , TG      , QSFC    , QSNOW   , & ! IN/OUT : 
                    ISNOW   , ZSNSO   , SNOWH   , SNEQV   , SNICE   , SNLIQ   , & ! IN/OUT : 
-                   ZWT     , WA      , WT      , WSLAKE  , LFMASS  , RTMASS  , & ! IN/OUT : 
+                   ZWT     , WA      , WT      , LFMASS  , RTMASS  , & ! IN/OUT : 
                    STMASS  , WOOD    , STBLCP  , FASTCP  , LAI     , SAI     , & ! IN/OUT : 
                    CM      , CH      , TAUSS   ,                               & ! IN/OUT : 
                    GRAIN   , GDD     , PGS     ,                               & ! IN/OUT 
@@ -378,7 +378,6 @@ contains
   type (noahmp_parameters), INTENT(IN) :: parameters
 
   INTEGER                        , INTENT(IN)    :: ICE    !ice (ice = 1)
-  INTEGER                        , INTENT(IN)    :: IST    !surface type 1->soil; 2->lake
   INTEGER                        , INTENT(IN)    :: VEGTYP !vegetation type 
   INTEGER                        , INTENT(IN)    :: CROPTYPE !crop type 
   INTEGER                        , INTENT(IN)    :: NSNOW  !maximum no. of snow layers        
@@ -452,7 +451,6 @@ contains
   REAL                           , INTENT(INOUT) :: ZWT    !depth to water table [m]
   REAL                           , INTENT(INOUT) :: WA     !water storage in aquifer [mm]
   REAL                           , INTENT(INOUT) :: WT     !water in aquifer&saturated soil [mm]
-  REAL                           , INTENT(INOUT) :: WSLAKE !lake water storage (can be neg.) (mm)
   REAL,                            INTENT(INOUT) :: SMCWTD !soil water content between bottom of the soil and water table [m3/m3]
   REAL,                            INTENT(INOUT) :: DEEPRECH !recharge to or from the water table when deep [m]
   REAL,                            INTENT(INOUT) :: RECH !recharge to or from the water table when shallow [m] (diagnostic)
@@ -652,12 +650,10 @@ contains
 
 ! total water storage for water balance check
     
-     IF(IST == 1) THEN
      BEG_WB = CANLIQ + CANICE + SNEQV + WA
      DO IZ = 1,NSOIL
         BEG_WB = BEG_WB + SMC(IZ) * DZSNSO(IZ) * 1000.
      END DO
-     END IF
 
 ! vegetation phenology
 
@@ -682,7 +678,7 @@ contains
      IF(ELAI+ESAI == 0.0) FVEG = 0.0
 
     CALL PRECIP_HEAT(parameters,ILOC   ,JLOC   ,VEGTYP ,DT     ,UU     ,VV     , & !in
-                     ELAI   ,ESAI   ,FVEG   ,IST    ,                 & !in
+                     ELAI   ,ESAI   ,FVEG   ,                 & !in
                      BDFALL ,RAIN   ,SNOW   ,FP     ,                 & !in
                      CANLIQ ,CANICE ,TV     ,SFCTMP ,TG     ,         & !in
                      QINTR  ,QDRIPR ,QTHROR ,QINTS  ,QDRIPS ,QTHROS , & !out
@@ -691,7 +687,7 @@ contains
 
 ! compute energy budget (momentum & energy fluxes and phase changes) 
 
-    CALL ENERGY (parameters,ICE    ,VEGTYP ,IST    ,NSNOW  ,NSOIL  , & !in
+    CALL ENERGY (parameters,ICE    ,VEGTYP ,NSNOW  ,NSOIL  , & !in
                  ISNOW  ,DT     ,RHOAIR ,SFCPRS ,QAIR   , & !in
                  SFCTMP ,THAIR  ,LWDN   ,UU     ,VV     ,ZLVL   , & !in
                  CO2AIR ,O2AIR  ,SOLAD  ,SOLAI  ,COSZ   ,IGS    , & !in
@@ -730,12 +726,12 @@ contains
      CALL WATER (parameters,VEGTYP ,NSNOW  ,NSOIL  ,IMELT  ,DT     ,UU     , & !in
                  VV     ,FCEV   ,FCTR   ,QPRECC ,QPRECL ,ELAI   , & !in
                  ESAI   ,SFCTMP ,QVAP   ,QDEW   ,ZSOIL  ,BTRANI , & !in
-                 FICEOLD,PONDING,TG     ,IST    ,FVEG   ,iloc,jloc , SMCEQ , & !in
+                 FICEOLD,PONDING,TG     ,FVEG   ,iloc,jloc , SMCEQ , & !in
                  BDFALL ,FP     ,RAIN   ,SNOW   ,                 & !in  MB/AN: v3.7
 		 QSNOW  ,QRAIN  ,SNOWHIN,LATHEAV,LATHEAG,frozen_canopy,frozen_ground,  & !in  MB
                  ISNOW  ,CANLIQ ,CANICE ,TV     ,SNOWH  ,SNEQV  , & !inout
                  SNICE  ,SNLIQ  ,STC    ,ZSNSO  ,SH2O   ,SMC    , & !inout
-                 SICE   ,ZWT    ,WA     ,WT     ,DZSNSO ,WSLAKE , & !inout
+                 SICE   ,ZWT    ,WA     ,WT     ,DZSNSO , & !inout
                  SMCWTD ,DEEPRECH,RECH                          , & !inout
                  CMC    ,ECAN   ,ETRAN  ,FWET   ,RUNSRF ,RUNSUB , & !out
                  QIN    ,QDIS   ,PONDING1       ,PONDING2,&
@@ -753,7 +749,7 @@ contains
     CALL CARBON (parameters,NSNOW  ,NSOIL  ,VEGTYP ,DT     ,ZSOIL  , & !in
                  DZSNSO ,STC    ,SMC    ,TV     ,TG     ,PSN    , & !in
                  FOLN   ,BTRAN  ,APAR   ,FVEG   ,IGS    , & !in
-                 TROOT  ,IST    ,LAT    ,iloc   ,jloc   , & !in
+                 TROOT  ,LAT    ,iloc   ,jloc   , & !in
                  LFMASS ,RTMASS ,STMASS ,WOOD   ,STBLCP ,FASTCP , & !inout
                  GPP    ,NPP    ,NEE    ,AUTORS ,HETERS ,TOTSC  , & !out
                  TOTLB  ,LAI    ,SAI    )                   !out
@@ -775,7 +771,7 @@ contains
                  FGEV   ,FCTR   ,SSOIL  ,BEG_WB ,CANLIQ ,CANICE , & !in
                  SNEQV  ,WA     ,SMC    ,DZSNSO ,PRCP   ,ECAN   , & !in
                  ETRAN  ,EDIR   ,RUNSRF ,RUNSUB ,DT     ,NSOIL  , & !in
-                 NSNOW  ,IST    ,ERRWAT ,ILOC   , JLOC  ,FVEG   , &
+                 NSNOW  ,ERRWAT ,ILOC   , JLOC  ,FVEG   , &
                  SAV    ,SAG    ,FSRV   ,FSRG   ,ZWT    ,PAH    , &
                  PAHV   ,PAHG   ,PAHB   )   !in ( Except ERRWAT, which is out )
 
@@ -1051,7 +1047,7 @@ contains
 !== begin precip_heat ==============================================================================
 
   SUBROUTINE PRECIP_HEAT (parameters,ILOC   ,JLOC   ,VEGTYP ,DT     ,UU     ,VV     , & !in
-                          ELAI   ,ESAI   ,FVEG   ,IST    ,                 & !in
+                          ELAI   ,ESAI   ,FVEG   ,                 & !in
                           BDFALL ,RAIN   ,SNOW   ,FP     ,                 & !in
                           CANLIQ ,CANICE ,TV     ,SFCTMP ,TG     ,         & !in
                           QINTR  ,QDRIPR ,QTHROR ,QINTS  ,QDRIPS ,QTHROS , & !out
@@ -1069,7 +1065,6 @@ contains
   INTEGER,INTENT(IN)  :: ILOC    !grid index
   INTEGER,INTENT(IN)  :: JLOC    !grid index
   INTEGER,INTENT(IN)  :: VEGTYP  !vegetation type
-  INTEGER,INTENT(IN)  :: IST     !surface type 1-soil; 2-lake
   REAL,   INTENT(IN)  :: DT      !main time step (s)
   REAL,   INTENT(IN)  :: UU      !u-direction wind speed [m/s]
   REAL,   INTENT(IN)  :: VV      !v-direction wind speed [m/s]
@@ -1263,10 +1258,6 @@ contains
       QSNOW   = QDRIPS + QTHROS
       SNOWHIN = QSNOW/BDFALL
 
-      IF (IST == 2 .AND. TG > TFRZ) THEN
-         QSNOW   = 0.
-         SNOWHIN = 0.
-      END IF
 !      print*,  "precip_heat qsnow*3600.0:",qsnow*3600.0
 !      print*,  "precip_heat qrain*3600.0:",qrain*3600.0
 !      print*,  "precip_heat SNOWHIN:",SNOWHIN
@@ -1283,7 +1274,7 @@ contains
                     FGEV   ,FCTR   ,SSOIL  ,BEG_WB ,CANLIQ ,CANICE , &
                     SNEQV  ,WA     ,SMC    ,DZSNSO ,PRCP   ,ECAN   , &
                     ETRAN  ,EDIR   ,RUNSRF ,RUNSUB ,DT     ,NSOIL  , &
-                    NSNOW  ,IST    ,ERRWAT, ILOC   ,JLOC   ,FVEG   , &
+                    NSNOW  ,ERRWAT, ILOC   ,JLOC   ,FVEG   , &
                     SAV    ,SAG    ,FSRV   ,FSRG   ,ZWT    ,PAH    , &
                     PAHV   ,PAHG   ,PAHB   )
 ! --------------------------------------------------------------------------------------------------
@@ -1295,7 +1286,6 @@ contains
   type (noahmp_parameters), intent(in) :: parameters
   INTEGER                        , INTENT(IN) :: NSNOW  !maximum no. of snow layers        
   INTEGER                        , INTENT(IN) :: NSOIL  !number of soil layers
-  INTEGER                        , INTENT(IN) :: IST    !surface type 1->soil; 2->lake
   INTEGER                        , INTENT(IN) :: ILOC   !grid index
   INTEGER                        , INTENT(IN) :: JLOC   !grid index
   REAL                           , INTENT(IN) :: SWDOWN !downward solar filtered by sun angle [w/m2]
@@ -1396,40 +1386,36 @@ contains
       call wrf_error_fatal("Energy budget problem in NOAHMP LSM")
    END IF
 
-   IF (IST == 1) THEN                                       !soil
-        END_WB = CANLIQ + CANICE + SNEQV + WA
-        DO IZ = 1,NSOIL
-          END_WB = END_WB + SMC(IZ) * DZSNSO(IZ) * 1000.
-        END DO
-        ERRWAT = END_WB-BEG_WB-(PRCP-ECAN-ETRAN-EDIR-RUNSRF-RUNSUB)*DT
+   END_WB = CANLIQ + CANICE + SNEQV + WA
+   DO IZ = 1,NSOIL
+     END_WB = END_WB + SMC(IZ) * DZSNSO(IZ) * 1000.
+   END DO
+   ERRWAT = END_WB-BEG_WB-(PRCP-ECAN-ETRAN-EDIR-RUNSRF-RUNSUB)*DT
 
 #ifndef WRF_HYDRO
-        IF(ABS(ERRWAT) > 0.1) THEN
-           if (ERRWAT > 0) then
-              call wrf_message ('The model is gaining water (ERRWAT is positive)')
-           else
-              call wrf_message('The model is losing water (ERRWAT is negative)')
-           endif
-           write(message, *) 'ERRWAT =',ERRWAT, "kg m{-2} timestep{-1}"
-           call wrf_message(trim(message))
-           WRITE(message, &
-           '("    I      J     END_WB     BEG_WB       PRCP       ECAN       EDIR      ETRAN      RUNSRF     RUNSUB")')
-           call wrf_message(trim(message))
-           WRITE(message,'(i6,1x,i6,1x,2f15.3,9f11.5)')ILOC,JLOC,END_WB,BEG_WB,PRCP*DT,ECAN*DT,&
-                EDIR*DT,ETRAN*DT,RUNSRF*DT,RUNSUB*DT,ZWT
-           call wrf_message(trim(message))
-           call wrf_error_fatal("Water budget problem in NOAHMP LSM")
-        END IF
+   IF(ABS(ERRWAT) > 0.1) THEN
+      if (ERRWAT > 0) then
+         call wrf_message ('The model is gaining water (ERRWAT is positive)')
+      else
+         call wrf_message('The model is losing water (ERRWAT is negative)')
+      endif
+      write(message, *) 'ERRWAT =',ERRWAT, "kg m{-2} timestep{-1}"
+      call wrf_message(trim(message))
+      WRITE(message, &
+      '("    I      J     END_WB     BEG_WB       PRCP       ECAN       EDIR      ETRAN      RUNSRF     RUNSUB")')
+      call wrf_message(trim(message))
+      WRITE(message,'(i6,1x,i6,1x,2f15.3,9f11.5)')ILOC,JLOC,END_WB,BEG_WB,PRCP*DT,ECAN*DT,&
+           EDIR*DT,ETRAN*DT,RUNSRF*DT,RUNSUB*DT,ZWT
+      call wrf_message(trim(message))
+      call wrf_error_fatal("Water budget problem in NOAHMP LSM")
+   END IF
 #endif
-   ELSE                 !KWM
-      ERRWAT = 0.0      !KWM
-   ENDIF
 
  END SUBROUTINE ERROR
 
 !== begin energy ===================================================================================
 
-  SUBROUTINE ENERGY (parameters,ICE    ,VEGTYP ,IST    ,NSNOW  ,NSOIL  , & !in
+  SUBROUTINE ENERGY (parameters,ICE    ,VEGTYP ,NSNOW  ,NSOIL  , & !in
                      ISNOW  ,DT     ,RHOAIR ,SFCPRS ,QAIR   , & !in
                      SFCTMP ,THAIR  ,LWDN   ,UU     ,VV     ,ZREF   , & !in
                      CO2AIR ,O2AIR  ,SOLAD  ,SOLAI  ,COSZ   ,IGS    , & !in
@@ -1496,7 +1482,6 @@ contains
   integer                           , INTENT(IN)    :: JLOC
   INTEGER                           , INTENT(IN)    :: ICE    !ice (ice = 1)
   INTEGER                           , INTENT(IN)    :: VEGTYP !vegetation physiology type
-  INTEGER                           , INTENT(IN)    :: IST    !surface type: 1->soil; 2->lake
   INTEGER                           , INTENT(IN)    :: NSNOW  !maximum no. of snow layers        
   INTEGER                           , INTENT(IN)    :: NSOIL  !number of soil layers
   INTEGER                           , INTENT(IN)    :: ISNOW  !actual no. of snow layers
@@ -1748,15 +1733,7 @@ contains
 
 ! ground roughness length
 
-     IF(IST == 2) THEN
-       IF(TG .LE. TFRZ) THEN
-         Z0MG = 0.01 * (1.0-FSNO) + FSNO * parameters%Z0SNO
-       ELSE
-         Z0MG = 0.01  
-       END IF
-     ELSE
-       Z0MG = Z0 * (1.0-FSNO) + FSNO * parameters%Z0SNO
-     END IF
+     Z0MG = Z0 * (1.0-FSNO) + FSNO * parameters%Z0SNO
 
 ! roughness length and displacement height
 
@@ -1780,7 +1757,7 @@ contains
 
 ! Thermal properties of soil, snow, lake, and frozen soil
 
-  CALL THERMOPROP (parameters,NSOIL   ,NSNOW   ,ISNOW   ,IST     ,DZSNSO  , & !in
+  CALL THERMOPROP (parameters,NSOIL   ,NSNOW   ,ISNOW   ,DZSNSO  , & !in
                    DT      ,SNOWH   ,SNICE   ,SNLIQ   , & !in
                    SMC     ,SH2O    ,TG      ,STC     ,UR      , & !in
                    LAT     ,Z0M     ,ZLVL    ,VEGTYP  , & !in
@@ -1789,7 +1766,7 @@ contains
 
 ! Solar radiation: absorbed & reflected by the ground and canopy
 
-  CALL  RADIATION (parameters,VEGTYP  ,IST     ,ICE     ,NSOIL   , & !in 
+  CALL  RADIATION (parameters,VEGTYP  ,ICE     ,NSOIL   , & !in 
                    SNEQVO  ,SNEQV   ,DT      ,COSZ    ,SNOWH   , & !in
                    TG      ,TV      ,FSNO    ,QSNOW   ,FWET    , & !in
                    ELAI    ,ESAI    ,SMC     ,SOLAD   ,SOLAI   , & !in
@@ -1805,65 +1782,58 @@ contains
      IF (ICE == 1) THEN
        EMG = 0.98*(1.-FSNO) + 1.0*FSNO
      ELSE
-       EMG = parameters%EG(IST)*(1.-FSNO) + 1.0*FSNO
+       EMG = parameters%EG*(1.-FSNO) + 1.0*FSNO
      END IF
 
 ! soil moisture factor controlling stomatal resistance
    
      BTRAN = 0.
 
-     IF(IST ==1 ) THEN
-       DO IZ = 1, parameters%NROOT
-          IF(OPT_BTR == 1) then                  ! Noah
-            GX    = (SH2O(IZ)-parameters%SMCWLT(IZ)) / (parameters%SMCREF(IZ)-parameters%SMCWLT(IZ))
-          END IF
-          IF(OPT_BTR == 2) then                  ! CLM
-            PSI   = MAX(PSIWLT,-parameters%PSISAT(IZ)*(MAX(0.01,SH2O(IZ))/parameters%SMCMAX(IZ))**(-parameters%BEXP(IZ)) )
-            GX    = (1.-PSI/PSIWLT)/(1.+parameters%PSISAT(IZ)/PSIWLT)
-          END IF
-          IF(OPT_BTR == 3) then                  ! SSiB
-            PSI   = MAX(PSIWLT,-parameters%PSISAT(IZ)*(MAX(0.01,SH2O(IZ))/parameters%SMCMAX(IZ))**(-parameters%BEXP(IZ)) )
-            GX    = 1.-EXP(-5.8*(LOG(PSIWLT/PSI))) 
-          END IF
+     DO IZ = 1, parameters%NROOT
+        IF(OPT_BTR == 1) then                  ! Noah
+          GX    = (SH2O(IZ)-parameters%SMCWLT(IZ)) / (parameters%SMCREF(IZ)-parameters%SMCWLT(IZ))
+        END IF
+        IF(OPT_BTR == 2) then                  ! CLM
+          PSI   = MAX(PSIWLT,-parameters%PSISAT(IZ)*(MAX(0.01,SH2O(IZ))/parameters%SMCMAX(IZ))**(-parameters%BEXP(IZ)) )
+          GX    = (1.-PSI/PSIWLT)/(1.+parameters%PSISAT(IZ)/PSIWLT)
+        END IF
+        IF(OPT_BTR == 3) then                  ! SSiB
+          PSI   = MAX(PSIWLT,-parameters%PSISAT(IZ)*(MAX(0.01,SH2O(IZ))/parameters%SMCMAX(IZ))**(-parameters%BEXP(IZ)) )
+          GX    = 1.-EXP(-5.8*(LOG(PSIWLT/PSI))) 
+        END IF
        
-          GX = MIN(1.,MAX(0.,GX))
-          BTRANI(IZ) = MAX(MPE,DZSNSO(IZ) / (-ZSOIL(parameters%NROOT)) * GX)
-          BTRAN      = BTRAN + BTRANI(IZ)
-       END DO
-       BTRAN = MAX(MPE,BTRAN)
+        GX = MIN(1.,MAX(0.,GX))
+        BTRANI(IZ) = MAX(MPE,DZSNSO(IZ) / (-ZSOIL(parameters%NROOT)) * GX)
+        BTRAN      = BTRAN + BTRANI(IZ)
+     END DO
+     BTRAN = MAX(MPE,BTRAN)
 
-       BTRANI(1:parameters%NROOT) = BTRANI(1:parameters%NROOT)/BTRAN
-     END IF
+     BTRANI(1:parameters%NROOT) = BTRANI(1:parameters%NROOT)/BTRAN
 
 ! soil surface resistance for ground evap.
 
      BEVAP = MAX(0.0,SH2O(1)/parameters%SMCMAX(1))
-     IF(IST == 2) THEN
-       RSURF = 1.          ! avoid being divided by 0
-       RHSUR = 1.0
-     ELSE
 
-       IF(OPT_RSF == 1 .OR. OPT_RSF == 4) THEN
+     IF(OPT_RSF == 1 .OR. OPT_RSF == 4) THEN
          ! RSURF based on Sakaguchi and Zeng, 2009
          ! taking the "residual water content" to be the wilting point, 
          ! and correcting the exponent on the D term (typo in SZ09 ?)
          L_RSURF = (-ZSOIL(1)) * ( exp ( (1.0 - MIN(1.0,SH2O(1)/parameters%SMCMAX(1))) ** 5 ) - 1.0 ) / ( 2.71828 - 1.0 ) 
          D_RSURF = 2.2E-5 * parameters%SMCMAX(1) * parameters%SMCMAX(1) * ( 1.0 - parameters%SMCWLT(1) / parameters%SMCMAX(1) ) ** (2.0+3.0/parameters%BEXP(1))
          RSURF = L_RSURF / D_RSURF
-       ELSEIF(OPT_RSF == 2) THEN
+     ELSEIF(OPT_RSF == 2) THEN
          RSURF = FSNO * 1. + (1.-FSNO)* EXP(8.25-4.225*BEVAP) !Sellers (1992) ! Older RSURF computations
-       ELSEIF(OPT_RSF == 3) THEN
+     ELSEIF(OPT_RSF == 3) THEN
          RSURF = FSNO * 1. + (1.-FSNO)* EXP(8.25-6.0  *BEVAP) !adjusted to decrease RSURF for wet soil
-       ENDIF
+     ENDIF
 
-       IF(OPT_RSF == 4) THEN  ! AD: FSNO weighted; snow RSURF set in MPTABLE v3.8
+     IF(OPT_RSF == 4) THEN  ! AD: FSNO weighted; snow RSURF set in MPTABLE v3.8
          RSURF = 1. / (FSNO * (1./parameters%RSURF_SNOW) + (1.-FSNO) * (1./max(RSURF, 0.001)))
-       ENDIF
+     ENDIF
 
-       IF(SH2O(1) < 0.01 .and. SNOWH == 0.) RSURF = 1.E6
-       PSI   = -parameters%PSISAT(1)*(MAX(0.01,SH2O(1))/parameters%SMCMAX(1))**(-parameters%BEXP(1))   
-       RHSUR = FSNO + (1.-FSNO) * EXP(PSI*GRAV/(RW*TG)) 
-     END IF
+     IF(SH2O(1) < 0.01 .and. SNOWH == 0.) RSURF = 1.E6
+     PSI   = -parameters%PSISAT(1)*(MAX(0.01,SH2O(1))/parameters%SMCMAX(1))**(-parameters%BEXP(1))   
+     RHSUR = FSNO + (1.-FSNO) * EXP(PSI*GRAV/(RW*TG)) 
 
 ! urban - jref 
      IF (parameters%urban_flag .and. SNOWH == 0. ) THEN
@@ -2016,7 +1986,7 @@ contains
 
 ! 3L snow & 4L soil temperatures
 
-    CALL TSNOSOI (parameters,ICE     ,NSOIL   ,NSNOW   ,ISNOW   ,IST     , & !in
+    CALL TSNOSOI (parameters,ICE     ,NSOIL   ,NSNOW   ,ISNOW   , & !in
                   TBOT    ,ZSNSO   ,SSOIL   ,DF      ,HCPCT   , & !in
                   SAG     ,DT      ,SNOWH   ,DZSNSO  , & !in
                   TG      ,ILOC    ,JLOC    ,                   & !in
@@ -2040,7 +2010,7 @@ contains
 ! Energy released or consumed by snow & frozen soil
 
  CALL PHASECHANGE (parameters,NSNOW   ,NSOIL   ,ISNOW   ,DT      ,FACT    , & !in
-                   DZSNSO  ,HCPCT   ,IST     ,ILOC    ,JLOC    , & !in
+                   DZSNSO  ,HCPCT   ,ILOC    ,JLOC    , & !in
                    STC     ,SNICE   ,SNLIQ   ,SNEQV   ,SNOWH   , & !inout
                    SMC     ,SH2O    ,                            & !inout
                    QMELT   ,IMELT   ,PONDING )                     !out
@@ -2050,7 +2020,7 @@ contains
 
 !== begin thermoprop ===============================================================================
 
-  SUBROUTINE THERMOPROP (parameters,NSOIL   ,NSNOW   ,ISNOW   ,IST     ,DZSNSO  , & !in
+  SUBROUTINE THERMOPROP (parameters,NSOIL   ,NSNOW   ,ISNOW   ,DZSNSO  , & !in
                          DT      ,SNOWH   ,SNICE   ,SNLIQ   , & !in
                          SMC     ,SH2O    ,TG      ,STC     ,UR      , & !in
                          LAT     ,Z0M     ,ZLVL    ,VEGTYP  , & !in
@@ -2064,7 +2034,6 @@ contains
   INTEGER                        , INTENT(IN)  :: NSOIL   !number of soil layers
   INTEGER                        , INTENT(IN)  :: NSNOW   !maximum no. of snow layers        
   INTEGER                        , INTENT(IN)  :: ISNOW   !actual no. of snow layers
-  INTEGER                        , INTENT(IN)  :: IST     !surface type
   REAL                           , INTENT(IN)  :: DT      !time step [s]
   REAL, DIMENSION(-NSNOW+1:    0), INTENT(IN)  :: SNICE   !snow ice mass (kg/m2)
   REAL, DIMENSION(-NSNOW+1:    0), INTENT(IN)  :: SNLIQ   !snow liq mass (kg/m2)
@@ -2126,21 +2095,6 @@ contains
 ! not in use because of the separation of the canopy layer from the ground.
 ! but this may represent the effects of leaf litter (Niu comments)
 !       DF1 = DF1 * EXP (SBETA * SHDFAC)
-
-! compute lake thermal properties 
-! (no consideration of turbulent mixing for this version)
-
-    IF(IST == 2) THEN
-       DO IZ = 1, NSOIL 
-         IF(STC(IZ) > TFRZ) THEN
-            HCPCT(IZ) = CWAT
-            DF(IZ)    = TKWAT  !+ KEDDY * CWAT 
-         ELSE
-            HCPCT(IZ) = CICE
-            DF(IZ)    = TKICE 
-         END IF
-       END DO
-    END IF
 
 ! combine a temporary variable used for melting/freezing of snow and frozen soil
 
@@ -2331,7 +2285,7 @@ contains
 
 !== begin radiation ================================================================================
 
-  SUBROUTINE RADIATION (parameters,VEGTYP  ,IST     ,ICE     ,NSOIL   , & !in
+  SUBROUTINE RADIATION (parameters,VEGTYP  ,ICE     ,NSOIL   , & !in
                         SNEQVO  ,SNEQV   ,DT      ,COSZ    ,SNOWH   , & !in
                         TG      ,TV      ,FSNO    ,QSNOW   ,FWET    , & !in
                         ELAI    ,ESAI    ,SMC     ,SOLAD   ,SOLAI   , & !in
@@ -2348,7 +2302,6 @@ contains
   INTEGER, INTENT(IN)                  :: ILOC
   INTEGER, INTENT(IN)                  :: JLOC
   INTEGER, INTENT(IN)                  :: VEGTYP !vegetation type
-  INTEGER, INTENT(IN)                  :: IST    !surface type
   INTEGER, INTENT(IN)                  :: ICE    !ice (ice = 1)
   INTEGER, INTENT(IN)                  :: NSOIL  !number of soil layers
 
@@ -2419,7 +2372,7 @@ contains
 
 ! surface abeldo
 
-   CALL ALBEDO (parameters,VEGTYP ,IST    ,ICE    ,NSOIL  , & !in
+   CALL ALBEDO (parameters,VEGTYP ,ICE    ,NSOIL  , & !in
                 DT     ,COSZ   ,FAGE   ,ELAI   ,ESAI   , & !in
                 TG     ,TV     ,SNOWH  ,FSNO   ,FWET   , & !in
                 SMC    ,SNEQVO ,SNEQV  ,QSNOW  ,FVEG   , & !in
@@ -2455,7 +2408,7 @@ contains
 
 !== begin albedo ===================================================================================
 
-  SUBROUTINE ALBEDO (parameters,VEGTYP ,IST    ,ICE    ,NSOIL  , & !in
+  SUBROUTINE ALBEDO (parameters,VEGTYP ,ICE    ,NSOIL  , & !in
                      DT     ,COSZ   ,FAGE   ,ELAI   ,ESAI   , & !in
                      TG     ,TV     ,SNOWH  ,FSNO   ,FWET   , & !in
                      SMC    ,SNEQVO ,SNEQV  ,QSNOW  ,FVEG   , & !in
@@ -2479,7 +2432,6 @@ contains
   INTEGER,                  INTENT(IN)  :: JLOC
   INTEGER,                  INTENT(IN)  :: NSOIL  !number of soil layers
   INTEGER,                  INTENT(IN)  :: VEGTYP !vegetation type
-  INTEGER,                  INTENT(IN)  :: IST    !surface type
   INTEGER,                  INTENT(IN)  :: ICE    !ice (ice = 1)
 
   REAL,                     INTENT(IN)  :: DT     !time step [sec]
@@ -2593,7 +2545,7 @@ contains
 
 ! ground surface albedo
 
-  CALL GROUNDALB (parameters,NSOIL   ,NBAND   ,ICE     ,IST     , & !in
+  CALL GROUNDALB (parameters,NSOIL   ,NBAND   ,ICE     , & !in
                   FSNO    ,SMC     ,ALBSND  ,ALBSNI  ,COSZ    , & !in
                   TG      ,ILOC    ,JLOC    ,                   & !in
                   ALBGRD  ,ALBGRI  )                              !out
@@ -2605,14 +2557,14 @@ contains
       IC = 0      ! direct
       CALL TWOSTREAM (parameters,IB     ,IC      ,VEGTYP  ,COSZ    ,VAI    , & !in
                       FWET   ,TV      ,ALBGRD  ,ALBGRI  ,RHO    , & !in
-                      TAU    ,FVEG    ,IST     ,ILOC    ,JLOC   , & !in
+                      TAU    ,FVEG    ,ILOC    ,JLOC   , & !in
                       FABD   ,ALBD    ,FTDD    ,FTID    ,GDIR   , &!)   !out
                       FREVD  ,FREGD   ,BGAP    ,WGAP)
 
       IC = 1      ! diffuse
       CALL TWOSTREAM (parameters,IB     ,IC      ,VEGTYP  ,COSZ    ,VAI    , & !in
                       FWET   ,TV      ,ALBGRD  ,ALBGRI  ,RHO    , & !in
-                      TAU    ,FVEG    ,IST     ,ILOC    ,JLOC   , & !in
+                      TAU    ,FVEG    ,ILOC    ,JLOC   , & !in
                       FABI   ,ALBI    ,FTDI    ,FTII    ,GDIR   , & !)   !out
                       FREVI  ,FREGI   ,BGAP    ,WGAP)
 
@@ -2924,7 +2876,7 @@ contains
 
 !== begin groundalb ================================================================================
 
-  SUBROUTINE GROUNDALB (parameters,NSOIL   ,NBAND   ,ICE     ,IST     , & !in
+  SUBROUTINE GROUNDALB (parameters,NSOIL   ,NBAND   ,ICE     , & !in
                         FSNO    ,SMC     ,ALBSND  ,ALBSNI  ,COSZ    , & !in
                         TG      ,ILOC    ,JLOC    ,                   & !in
                         ALBGRD  ,ALBGRI  )                              !out
@@ -2939,7 +2891,6 @@ contains
   INTEGER,                  INTENT(IN)  :: NSOIL  !number of soil layers
   INTEGER,                  INTENT(IN)  :: NBAND  !number of solar radiation waveband classes
   INTEGER,                  INTENT(IN)  :: ICE    !value of ist for land ice
-  INTEGER,                  INTENT(IN)  :: IST    !surface type
   REAL,                     INTENT(IN)  :: FSNO   !fraction of surface covered with snow (-)
   REAL,                     INTENT(IN)  :: TG     !ground temperature (k)
   REAL,                     INTENT(IN)  :: COSZ   !cosine solar zenith angle (0-1)
@@ -2962,16 +2913,8 @@ contains
 
   DO IB = 1, NBAND
         INC = MAX(0.11-0.40*SMC(1), 0.)
-        IF (IST .EQ. 1)  THEN                     !soil
-           ALBSOD = MIN(parameters%ALBSAT(IB)+INC,parameters%ALBDRY(IB))
-           ALBSOI = ALBSOD
-        ELSE IF (TG .GT. TFRZ) THEN               !unfrozen lake, wetland
-           ALBSOD = 0.06/(MAX(0.01,COSZ)**1.7 + 0.15)
-           ALBSOI = 0.06
-        ELSE                                      !frozen lake, wetland
-           ALBSOD = parameters%ALBLAK(IB)
-           ALBSOI = ALBSOD
-        END IF
+        ALBSOD = MIN(parameters%ALBSAT(IB)+INC,parameters%ALBDRY(IB))
+        ALBSOI = ALBSOD
 
 ! increase desert and semi-desert albedos
 
@@ -2990,7 +2933,7 @@ contains
 
   SUBROUTINE TWOSTREAM (parameters,IB     ,IC      ,VEGTYP  ,COSZ    ,VAI    , & !in
                         FWET   ,T       ,ALBGRD  ,ALBGRI  ,RHO    , & !in
-                        TAU    ,FVEG    ,IST     ,ILOC    ,JLOC   , & !in
+                        TAU    ,FVEG    ,ILOC    ,JLOC   , & !in
                         FAB    ,FRE     ,FTD     ,FTI     ,GDIR   , & !)   !out
                         FREV   ,FREG    ,BGAP    ,WGAP)
 
@@ -3008,7 +2951,6 @@ contains
   type (noahmp_parameters), intent(in) :: parameters
    INTEGER,              INTENT(IN)  :: ILOC    !grid index
    INTEGER,              INTENT(IN)  :: JLOC    !grid index
-   INTEGER,              INTENT(IN)  :: IST     !surface type
    INTEGER,              INTENT(IN)  :: IB      !waveband number
    INTEGER,              INTENT(IN)  :: IC      !0=unit incoming direct; 1=unit incoming diffuse
    INTEGER,              INTENT(IN)  :: VEGTYP  !vegetation type
@@ -4844,7 +4786,7 @@ contains
 
 !== begin tsnosoi ==================================================================================
 
-  SUBROUTINE TSNOSOI (parameters,ICE     ,NSOIL   ,NSNOW   ,ISNOW   ,IST     , & !in
+  SUBROUTINE TSNOSOI (parameters,ICE     ,NSOIL   ,NSNOW   ,ISNOW   , & !in
                       TBOT    ,ZSNSO   ,SSOIL   ,DF      ,HCPCT   , & !in
                       SAG     ,DT      ,SNOWH   ,DZSNSO  , & !in
                       TG      ,ILOC    ,JLOC    ,                   & !in
@@ -4865,7 +4807,6 @@ contains
     INTEGER,                         INTENT(IN)  :: NSOIL  !no of soil layers (4)
     INTEGER,                         INTENT(IN)  :: NSNOW  !maximum no of snow layers (3)
     INTEGER,                         INTENT(IN)  :: ISNOW  !actual no of snow layers
-    INTEGER,                         INTENT(IN)  :: IST    !surface type
 
     REAL,                            INTENT(IN)  :: DT     !time step (s)
     REAL,                            INTENT(IN)  :: TBOT   !
@@ -4954,7 +4895,7 @@ contains
        WRITE(message,*) 'TSNOSOI is losing(-)/gaining(+) false energy',ERR_EST,' W/m2'
        call wrf_message(trim(message))
        WRITE(message,'(i6,1x,i6,1x,i3,F18.13,5F20.12)') &
-            ILOC, JLOC, IST,ERR_EST,SSOIL,SNOWH,TG,STC(ISNOW+1),EFLXB
+            ILOC, JLOC, ERR_EST,SSOIL,SNOWH,TG,STC(ISNOW+1),EFLXB
        call wrf_message(trim(message))
        !niu      STOP
     END IF
@@ -5184,7 +5125,7 @@ contains
 !== begin phasechange ==============================================================================
 
   SUBROUTINE PHASECHANGE (parameters,NSNOW   ,NSOIL   ,ISNOW   ,DT      ,FACT    , & !in
-                          DZSNSO  ,HCPCT   ,IST     ,ILOC    ,JLOC    , & !in
+                          DZSNSO  ,HCPCT   ,ILOC    ,JLOC    , & !in
                           STC     ,SNICE   ,SNLIQ   ,SNEQV   ,SNOWH   , & !inout
                           SMC     ,SH2O    ,                            & !inout
                           QMELT   ,IMELT   ,PONDING )                     !out
@@ -5201,7 +5142,6 @@ contains
   INTEGER, INTENT(IN)                             :: NSNOW  !maximum no. of snow layers [=3]
   INTEGER, INTENT(IN)                             :: NSOIL  !No. of soil layers [=4]
   INTEGER, INTENT(IN)                             :: ISNOW  !actual no. of snow layers [<=3]
-  INTEGER, INTENT(IN)                             :: IST    !surface type: 1->soil; 2->lake
   REAL, INTENT(IN)                                :: DT     !land model time step (sec)
   REAL, DIMENSION(-NSNOW+1:NSOIL), INTENT(IN)     :: FACT   !temporary
   REAL, DIMENSION(-NSNOW+1:NSOIL), INTENT(IN)     :: DZSNSO !snow/soil layer thickness [m]
@@ -5269,21 +5209,19 @@ contains
          WMASS0(J)   = MICE(J) + MLIQ(J)
     ENDDO
 
-    if(ist == 1) then
-      DO J = 1,NSOIL
-         IF (OPT_FRZ == 1) THEN
-            IF(STC(J) < TFRZ) THEN
-               SMP = HFUS*(TFRZ-STC(J))/(GRAV*STC(J))             !(m)
-               SUPERCOOL(J) = parameters%SMCMAX(J)*(SMP/parameters%PSISAT(J))**(-1./parameters%BEXP(J))
-               SUPERCOOL(J) = SUPERCOOL(J)*DZSNSO(J)*1000.        !(mm)
-            END IF
-         END IF
-         IF (OPT_FRZ == 2) THEN
-               CALL FRH2O (parameters,J,SUPERCOOL(J),STC(J),SMC(J),SH2O(J))
-               SUPERCOOL(J) = SUPERCOOL(J)*DZSNSO(J)*1000.        !(mm)
-         END IF
-      ENDDO
-    end if
+    DO J = 1,NSOIL
+       IF (OPT_FRZ == 1) THEN
+          IF(STC(J) < TFRZ) THEN
+             SMP = HFUS*(TFRZ-STC(J))/(GRAV*STC(J))             !(m)
+             SUPERCOOL(J) = parameters%SMCMAX(J)*(SMP/parameters%PSISAT(J))**(-1./parameters%BEXP(J))
+             SUPERCOOL(J) = SUPERCOOL(J)*DZSNSO(J)*1000.        !(mm)
+          END IF
+       END IF
+       IF (OPT_FRZ == 2) THEN
+             CALL FRH2O (parameters,J,SUPERCOOL(J),STC(J),SMC(J),SH2O(J))
+             SUPERCOOL(J) = SUPERCOOL(J)*DZSNSO(J)*1000.        !(mm)
+       END IF
+    ENDDO
 
     DO J = ISNOW+1,NSOIL
          IF (MICE(J) > 0. .AND. STC(J) >= TFRZ) THEN  !melting 
@@ -5537,12 +5475,12 @@ contains
   SUBROUTINE WATER (parameters,VEGTYP ,NSNOW  ,NSOIL  ,IMELT  ,DT     ,UU     , & !in
                     VV     ,FCEV   ,FCTR   ,QPRECC ,QPRECL ,ELAI   , & !in
                     ESAI   ,SFCTMP ,QVAP   ,QDEW   ,ZSOIL  ,BTRANI , & !in
-                    FICEOLD,PONDING,TG     ,IST    ,FVEG   ,ILOC   ,JLOC ,SMCEQ , & !in
+                    FICEOLD,PONDING,TG     ,FVEG   ,ILOC   ,JLOC ,SMCEQ , & !in
                     BDFALL ,FP     ,RAIN   ,SNOW,                    & !in  MB/AN: v3.7
 		    QSNOW  ,QRAIN  ,SNOWHIN,LATHEAV,LATHEAG,frozen_canopy,frozen_ground,    & !in  MB
                     ISNOW  ,CANLIQ ,CANICE ,TV     ,SNOWH  ,SNEQV  , & !inout
                     SNICE  ,SNLIQ  ,STC    ,ZSNSO  ,SH2O   ,SMC    , & !inout
-                    SICE   ,ZWT    ,WA     ,WT     ,DZSNSO ,WSLAKE , & !inout
+                    SICE   ,ZWT    ,WA     ,WT     ,DZSNSO , & !inout
                     SMCWTD ,DEEPRECH,RECH                          , & !inout
                     CMC    ,ECAN   ,ETRAN  ,FWET   ,RUNSRF ,RUNSUB , & !out
                     QIN    ,QDIS   ,PONDING1       ,PONDING2,        &
@@ -5563,7 +5501,6 @@ contains
   INTEGER,                         INTENT(IN)    :: JLOC    !grid index
   INTEGER,                         INTENT(IN)    :: VEGTYP  !vegetation type
   INTEGER,                         INTENT(IN)    :: NSNOW   !maximum no. of snow layers
-  INTEGER                        , INTENT(IN)    :: IST     !surface type 1-soil; 2-lake
   INTEGER,                         INTENT(IN)    :: NSOIL   !no. of soil layers
   INTEGER, DIMENSION(-NSNOW+1:0) , INTENT(IN)    :: IMELT   !melting state index [1-melt; 2-freeze]
   REAL,                            INTENT(IN)    :: DT      !main time step (s)
@@ -5612,7 +5549,6 @@ contains
   REAL,                            INTENT(INOUT) :: WA      !water storage in aquifer [mm]
   REAL,                            INTENT(INOUT) :: WT      !water storage in aquifer 
                                                             !+ stuarated soil [mm]
-  REAL,                            INTENT(INOUT) :: WSLAKE  !water storage in lake (can be -) (mm)
   REAL                           , INTENT(INOUT) :: PONDING ![mm]
   REAL,                            INTENT(INOUT) :: SMCWTD !soil water content between bottom of the soil and water table [m3/m3]
   REAL,                            INTENT(INOUT) :: DEEPRECH !recharge to or from the water table when deep [m]
@@ -5726,45 +5662,38 @@ contains
        QINSUR = QINSUR+sfcheadrt/DT*0.001  !sfcheadrt units (m)
 #endif
 
-! lake/soil water balances
+! soil water balances
 
-    IF (IST == 2) THEN                                        ! lake
-       RUNSRF = 0.
-       IF(WSLAKE >= WSLMAX) RUNSRF = QINSUR*1000.             !mm/s
-       WSLAKE = WSLAKE + (QINSUR-QSEVA)*1000.*DT -RUNSRF*DT   !mm
-    ELSE                                                      ! soil
-       CALL      SOILWATER (parameters,NSOIL  ,NSNOW  ,DT     ,ZSOIL  ,DZSNSO , & !in
-                            QINSUR ,QSEVA  ,ETRANI ,SICE   ,ILOC   , JLOC , & !in
-                            SH2O   ,SMC    ,ZWT    ,VEGTYP , & !inout
-                           SMCWTD, DEEPRECH                       , & !inout
-                            RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX )   !out
- 
-       IF(OPT_RUN == 1) THEN 
-          CALL GROUNDWATER (parameters,NSNOW  ,NSOIL  ,DT     ,SICE   ,ZSOIL  , & !in
-                            STC    ,WCND   ,FCRMAX ,ILOC   ,JLOC   , & !in
-                            SH2O   ,ZWT    ,WA     ,WT     ,         & !inout
+    CALL      SOILWATER (parameters,NSOIL  ,NSNOW  ,DT     ,ZSOIL  ,DZSNSO , & !in
+                         QINSUR ,QSEVA  ,ETRANI ,SICE   ,ILOC   , JLOC , & !in
+                         SH2O   ,SMC    ,ZWT    ,VEGTYP , & !inout
+                        SMCWTD, DEEPRECH                       , & !inout
+                       RUNSRF ,QDRAIN ,RUNSUB ,WCND   ,FCRMAX )   !out
+
+    IF(OPT_RUN == 1) THEN 
+       CALL GROUNDWATER (parameters,NSNOW  ,NSOIL  ,DT     ,SICE   ,ZSOIL  , & !in
+                         STC    ,WCND   ,FCRMAX ,ILOC   ,JLOC   , & !in
+                      SH2O   ,ZWT    ,WA     ,WT     ,         & !inout
                             QIN    ,QDIS   )                           !out
-          RUNSUB       = QDIS          !mm/s
-       END IF
+       RUNSUB       = QDIS          !mm/s
+    END IF
 
-       IF(OPT_RUN == 3 .or. OPT_RUN == 4) THEN 
-          RUNSUB       = RUNSUB + QDRAIN        !mm/s
-       END IF
+    IF(OPT_RUN == 3 .or. OPT_RUN == 4) THEN 
+       RUNSUB       = RUNSUB + QDRAIN        !mm/s
+    END IF
 
-       DO IZ = 1,NSOIL
-           SMC(IZ) = SH2O(IZ) + SICE(IZ)
-       ENDDO
+    DO IZ = 1,NSOIL
+        SMC(IZ) = SH2O(IZ) + SICE(IZ)
+    ENDDO
  
-       IF(OPT_RUN == 5) THEN
-          CALL SHALLOWWATERTABLE (parameters,NSNOW  ,NSOIL, ZSOIL, DT       , & !in
-                         DZSNSO ,SMCEQ   ,ILOC , JLOC        , & !in
-                         SMC    ,ZWT    ,SMCWTD ,RECH, QDRAIN  ) !inout
+    IF(OPT_RUN == 5) THEN
+       CALL SHALLOWWATERTABLE (parameters,NSNOW  ,NSOIL, ZSOIL, DT       , & !in
+                      DZSNSO ,SMCEQ   ,ILOC , JLOC        , & !in
+                      SMC    ,ZWT    ,SMCWTD ,RECH, QDRAIN  ) !inout
 
-          SH2O(NSOIL) = SMC(NSOIL) - SICE(NSOIL)
-          RUNSUB = RUNSUB + QDRAIN !it really comes from subroutine watertable, which is not called with the same frequency as the soil routines here
-          WA = 0.
-       ENDIF
-
+       SH2O(NSOIL) = SMC(NSOIL) - SICE(NSOIL)
+       RUNSUB = RUNSUB + QDRAIN !it really comes from subroutine watertable, which is not called with the same frequency as the soil routines here
+       WA = 0.
     ENDIF
 
     RUNSUB       = RUNSUB + SNOFLOW         !mm/s
@@ -7836,7 +7765,7 @@ END  SUBROUTINE SHALLOWWATERTABLE
   SUBROUTINE CARBON (parameters,NSNOW  ,NSOIL  ,VEGTYP ,DT     ,ZSOIL  , & !in
                      DZSNSO ,STC    ,SMC    ,TV     ,TG     ,PSN    , & !in
                      FOLN   ,BTRAN  ,APAR   ,FVEG   ,IGS    , & !in
-                     TROOT  ,IST    ,LAT    ,ILOC   ,JLOC   , & !in
+                     TROOT  ,LAT    ,ILOC   ,JLOC   , & !in
                      LFMASS ,RTMASS ,STMASS ,WOOD   ,STBLCP ,FASTCP , & !inout
                      GPP    ,NPP    ,NEE    ,AUTORS ,HETERS ,TOTSC  , & !out
                      TOTLB  ,XLAI   ,XSAI   )                   !out
@@ -7866,7 +7795,6 @@ END  SUBROUTINE SHALLOWWATERTABLE
   REAL                           , INTENT(IN) :: IGS    !growing season index (0=off, 1=on)
   REAL                           , INTENT(IN) :: FVEG   !vegetation greenness fraction
   REAL                           , INTENT(IN) :: TROOT  !root-zone averaged temperature (k)
-  INTEGER                        , INTENT(IN) :: IST    !surface type 1->soil; 2->lake
 
 ! input & output (carbon)
 
@@ -9049,7 +8977,7 @@ MODULE NOAHMP_TABLES
     REAL :: OMEGAS_TABLE(MBAND)       !two-stream parameter omega for snow
     REAL :: BETADS_TABLE              !two-stream parameter betad for snow
     REAL :: BETAIS_TABLE              !two-stream parameter betad for snow
-    REAL :: EG_TABLE(2)               !emissivity
+    REAL :: EG_TABLE                  !emissivity
 
 ! MPTABLE.TBL global parameters
 
@@ -9437,7 +9365,7 @@ CONTAINS
     implicit none
     integer :: ierr
 
-    REAL :: ALBICE(MBAND),ALBLAK(MBAND),OMEGAS(MBAND),BETADS,BETAIS,EG(2)
+    REAL :: ALBICE(MBAND),ALBLAK(MBAND),OMEGAS(MBAND),BETADS,BETAIS,EG
     REAL :: ALBSAT_VIS(MSC)
     REAL :: ALBSAT_NIR(MSC)
     REAL :: ALBDRY_VIS(MSC)
